@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Post Office Webcam Game</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #dceeff;
+    }
+    video {
+      width: 90%;
+      max-width: 500px;
+      border: 4px solid white;
+      border-radius: 12px;
+    }
+    .truck {
+      display: inline-block;
+      margin: 15px;
+      padding: 15px;
+      background: #ff66cc;
+      border: 3px solid #663399;
+      border-radius: 8px;
+      font-size: 20px;
+      transition: transform 2s, opacity 2s;
+    }
+    button {
+      padding: 12px 20px;
+      font-size: 17px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>📮 Post Office Delivery Game</h1>
+  <p>Hold up a card saying London, New York, or Paris!</p>
+
+  <video id="camera" autoplay playsinline></video>
+  <br><br>
+  <button id="start">Start Game</button>
+  <p id="status">Press Start Game to begin.</p>
+
+  <div id="trucks">
+    <span class="truck" id="London">🚚 London</span>
+    <span class="truck" id="New York">🚚 New York</span>
+    <span class="truck" id="Paris">🚚 Paris</span>
+  </div>
+
+  <script>
+    const video = document.getElementById("camera");
+    const status = document.getElementById("status");
+    let playing = false;
+    let busy = false;
+    let lastCity = "";
+
+    async function startCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+      video.srcObject = stream;
+    }
+
+    function honk() {
+      const audio = new AudioContext();
+      const oscillator = audio.createOscillator();
+      const gain = audio.createGain();
+
+      oscillator.type = "square";
+      oscillator.frequency.value = 400;
+      gain.gain.value = 0.15;
+
+      oscillator.connect(gain);
+      gain.connect(audio.destination);
+      oscillator.start();
+
+      setTimeout(() => {
+        oscillator.stop();
+        audio.close();
+      }, 300);
+    }
+
+    async function checkCard() {
+      if (!playing || busy) return;
+
+      busy = true;
+      status.textContent = "Looking for a city card...";
+
+      try {
+        const result = await Tesseract.recognize(
+          video,
+          "eng"
+        );
+
+        const text = result.data.text.toLowerCase();
+        let city = "";
+
+        if (text.includes("new york") || text.includes("newyork")) {
+          city = "New York";
+        } else if (text.includes("london")) {
+          city = "London";
+        } else if (text.includes("paris")) {
+          city = "Paris";
+        }
+
+        if (city && city !== lastCity) {
+          lastCity = city;
+          status.textContent = "📦 Delivery for " + city + "!";
+          honk();
+
+          const truck = document.getElementById(city);
+          truck.style.transform = "translateX(500px)";
+          truck.style.opacity = "0";
+
+          setTimeout(() => {
+            truck.style.transition = "none";
+            truck.style.transform = "translateX(0)";
+            truck.style.opacity = "1";
+
+            setTimeout(() => {
+              truck.style.transition = "transform 2s, opacity 2s";
+            }, 50);
+          }, 2200);
+        } else if (!city) {
+          status.textContent = "Hold the city card clearly in view!";
+          lastCity = "";
+        }
+      } catch (error) {
+        status.textContent = "Could not read the card. Try again.";
+      }
+      busy = false;
+
+      if (playing) {
+        setTimeout(checkCard, 500);
+      }
+    }
+    document.getElementById("start").addEventListener("click", async () => {
+      try {
+        await startCamera();
+        playing = true;
+        lastCity = "";
+        status.textContent = "Game started! Show your city card.";
+        checkCard();
+      } catch (error) {
+        status.textContent =
+          "Camera unavailable. Allow camera access and use HTTPS or localhost.";
+      }
+    });
+ <sript/>   
+<body/>
+<html/>
